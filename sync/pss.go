@@ -151,23 +151,31 @@ func save(str string) string {
 		for _, err := range valid.Errors {
 			log.Println(err.Key, err.Message)
 		}
+		return string("数据异常")
 	}
+
+	if j.SourceFrom == "" {
+		return string("同步职位失败")
+	}
+
 	var job Job
-	job, err = RequstJobSaveData(j)
+
+	db.Where(Job{SourceFrom: job.SourceFrom}).FirstOrCreate(&job)
+	err = RequstJobSaveData(&job, j)
 	if err != nil {
 		return "err: " + err.Error() + "!"
 	}
-	db.Where(Job{SourceFrom: job.SourceFrom}).FirstOrCreate(&job)
+
 	db.Save(&job)
 
-	fmt.Println(job.ID, job.Title)
+	fmt.Println(job.ID, job.Category, job.Company, job.Title)
 	jobString, _ := json.Marshal(job)
 	return string(jobString)
 }
 
 //RequstJobSaveData 把请求的数据包转成数据模型中的参数
-func RequstJobSaveData(rj RequstJob) (Job, error) {
-	var job Job
+func RequstJobSaveData(job *Job, rj RequstJob) error {
+
 	job.Title = rj.Title
 	job.Position = rj.Position
 	job.Company = rj.Company
@@ -221,7 +229,7 @@ func RequstJobSaveData(rj RequstJob) (Job, error) {
 	job.Param = b.String()
 	job.Tags = "{" + strings.Join(rj.Tags, ",") + "}"
 
-	return job, nil
+	return nil
 }
 
 // func checkCategory(val int) error {

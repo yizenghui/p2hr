@@ -101,7 +101,6 @@ func job(c echo.Context) error {
 	response.Intro = job.Intro
 	response.Tags = strings.Split(Substr(job.Tags, 1, -1), ",")
 	response.Linkman = job.Linkman
-	response.Linkman = job.Linkman
 	response.Telephone = job.Telephone
 	response.Email = job.Email
 	response.Address = job.Address
@@ -111,8 +110,33 @@ func job(c echo.Context) error {
 func jobs(c echo.Context) error {
 
 	// 检查用户坐标
-	lat, lng := 23.1156237010336, 113.412643600147
+	// lat, lng := 23.1156237010336, 113.412643600147
 
+	limit, _ := strconv.Atoi(c.QueryParam("limit"))
+	offset, _ := strconv.Atoi(c.QueryParam("offset"))
+
+	// 坐标查询
+	lat, _ := strconv.ParseFloat(c.QueryParam("lat"), 64)
+	lng, _ := strconv.ParseFloat(c.QueryParam("lng"), 64)
+	distance, _ := strconv.Atoi(c.QueryParam("distance"))
+	if distance <= 0 || distance > 20000 {
+		distance = 5000
+	}
+
+	var mapWhere = fmt.Sprintf("earth_box (ll_to_earth (%f, %f),%d) @> ll_to_earth (lat, lng)", lat, lng, distance)
+
+	// fmt.Println(mapWhere)
+
+	if limit <= 0 || limit > 100 {
+		limit = 10
+	}
+	// limit = 10
+	if offset < 0 || offset > 500 {
+		offset = 0
+	}
+	// offset = 0
+
+	// fmt.Println(limit, offset)
 	db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
 
 	if err != nil {
@@ -124,7 +148,8 @@ func jobs(c echo.Context) error {
 	defer db.Close()
 
 	var jobs Jobs
-	db.Find(&jobs)
+	// db.Offset(offset).Limit(limit).Where("earth_box (ll_to_earth (23.1156237010336, 113.412643600147),100) @> ll_to_earth (lat, lng)").Find(&jobs)
+	db.Offset(offset).Limit(limit).Where(mapWhere).Find(&jobs)
 
 	type ListJob struct {
 		ID       uint     `json:"id" `
