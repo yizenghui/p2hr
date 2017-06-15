@@ -1,18 +1,16 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"github.com/astaxie/beego/validation"
 	"github.com/hprose/hprose-golang/rpc"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/lib/pq"
 )
 
 type (
@@ -43,24 +41,24 @@ type (
 	// Job 数据库
 	Job struct {
 		gorm.Model
-		Title      string  `gorm:"size:255"`   // 职位标题
-		Position   string  `gorm:"size:255"`   // 原职位分类
-		Company    string  `gorm:"size:255"`   // 公司名
-		Param      string  `gorm:"type:int[]"` // 标签
-		Category   int     // 分类
-		Area       int     // 地区
-		MinPay     int     // 最小月薪
-		MaxPay     int     // 最大月薪
-		Education  int     // 学历
-		Experience int     // 工作经验
-		Intro      string  `gorm:"type:text"` // 职位介绍
-		Rank       float32 // 排序
-		Tags       string  `gorm:"type:text[]"` // 标签
-		SourceFrom string  `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
-		CompanyURL string  `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
-		Linkman    string  `gorm:"size:255"`
-		Telephone  string  `gorm:"size:255"`
-		Email      string  `gorm:"size:255"`
+		Title      string         `gorm:"size:255"`   // 职位标题
+		Position   string         `gorm:"size:255"`   // 原职位分类
+		Company    string         `gorm:"size:255"`   // 公司名
+		Param      pq.Int64Array  `gorm:"type:int[]"` // 标签
+		Category   int            // 分类
+		Area       int            // 地区
+		MinPay     int            // 最小月薪
+		MaxPay     int            // 最大月薪
+		Education  int            // 学历
+		Experience int            // 工作经验
+		Intro      string         `gorm:"type:text"` // 职位介绍
+		Rank       float32        // 排序
+		Tags       pq.StringArray `gorm:"type:text[]"` // 标签
+		SourceFrom string         `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
+		CompanyURL string         `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
+		Linkman    string         `gorm:"size:255"`
+		Telephone  string         `gorm:"size:255"`
+		Email      string         `gorm:"size:255"`
 		Lng        float64
 		Lat        float64
 		Address    string
@@ -69,53 +67,6 @@ type (
 	// 	job[] *Job
 	// }
 )
-
-// Category 大类
-var Category = map[int]string{
-	101: "经营管理类",
-	102: "公关/市场营销类",
-	103: "贸易/销售/业务类",
-	104: "财务类",
-	105: "行政/人力资源管理类",
-	106: "文职类",
-	107: "客户服务类",
-	108: "工厂类",
-	109: "计算机/互联网类",
-	110: "电子/通讯类",
-	111: "机械类",
-	112: "规划/建筑/建材类",
-	113: "房地产/物业管理类",
-	114: "金融/经济",
-	115: "设计类",
-	116: "法律类",
-	117: "酒店/餐饮类",
-	118: "物流/交通运输类",
-	119: "商场类",
-	120: "电气/电力类",
-	121: "咨询/顾问类",
-	122: "化工/生物类",
-	123: "文化/教育/体育/艺术类",
-	124: "医疗卫生/护理/保健类",
-	125: "新闻/出版/传媒类",
-	126: "公众服务类",
-	127: "印刷/染织类",
-	128: "技工类",
-	129: "其他专业类",
-}
-
-//Welfare 标签
-var Welfare = map[int]string{
-	401: "五险一金",
-	402: "包住",
-	403: "包吃",
-	404: "年底双薪",
-	405: "周末双休",
-	406: "交通补助",
-	407: "加班补助",
-	408: "饭补",
-	409: "话补",
-	410: "房补",
-}
 
 // 数据库对象
 
@@ -160,11 +111,12 @@ func save(str string) string {
 
 	var job Job
 
-	db.Where(Job{SourceFrom: job.SourceFrom}).FirstOrCreate(&job)
+	db.Where(Job{SourceFrom: j.SourceFrom}).FirstOrCreate(&job)
 	err = RequstJobSaveData(&job, j)
 	if err != nil {
 		return "err: " + err.Error() + "!"
 	}
+	// fmt.Println(job.Param, job.Tags)
 
 	db.Save(&job)
 
@@ -195,13 +147,11 @@ func RequstJobSaveData(job *Job, rj RequstJob) error {
 	job.Address = rj.Address
 	job.Lat = rj.Lat
 	job.Lng = rj.Lng
-	param := []string{}
+	param := []int64{}
 	// var param map[int]int
 
-	var b bytes.Buffer
-	b.WriteString("{")
 	if rj.Category != 0 {
-		param = append(param, strconv.Itoa(rj.Category))
+		param = append(param, int64(rj.Category))
 	}
 	// if err := checkCategory(rj.Category); err != nil {
 
@@ -209,25 +159,21 @@ func RequstJobSaveData(job *Job, rj RequstJob) error {
 	// }
 
 	if rj.Area != 0 {
-		param = append(param, strconv.Itoa(rj.Area))
+		param = append(param, int64(rj.Area))
 	}
 	if rj.Education != 0 {
-		param = append(param, strconv.Itoa(rj.Education))
+		param = append(param, int64(rj.Education))
 	}
 	if rj.Experience != 0 {
-		param = append(param, strconv.Itoa(rj.Experience))
+		param = append(param, int64(rj.Experience))
 	}
 
 	for _, tag := range rj.Welfare {
-		param = append(param, strconv.Itoa(tag))
+		param = append(param, int64(tag))
 	}
 
-	b.WriteString(strings.Join(param, ","))
-
-	b.WriteString("}")
-
-	job.Param = b.String()
-	job.Tags = "{" + strings.Join(rj.Tags, ",") + "}"
+	job.Param = param
+	job.Tags = rj.Tags
 
 	return nil
 }

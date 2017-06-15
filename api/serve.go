@@ -5,13 +5,12 @@ import (
 	"strconv"
 	"time"
 
-	"strings"
-
 	"fmt"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/labstack/echo"
+	"github.com/lib/pq"
 	"github.com/xuebing1110/location"
 	"github.com/yizenghui/gps"
 
@@ -30,24 +29,24 @@ type Jobs []Job
 // Job job
 type Job struct {
 	gorm.Model
-	Title      string  `gorm:"size:255"`   // 职位标题
-	Position   string  `gorm:"size:255"`   // 原职位分类
-	Company    string  `gorm:"size:255"`   // 公司名
-	Param      string  `gorm:"type:int[]"` // 标签
-	Category   int     // 分类
-	Area       int     // 地区
-	MinPay     int     // 最小月薪
-	MaxPay     int     // 最大月薪
-	Education  int     // 学历
-	Experience int     // 工作经验
-	Intro      string  `gorm:"type:text"` // 职位介绍
-	Rank       float32 // 排序
-	Tags       string  `gorm:"type:text[]"` // 标签
-	SourceFrom string  `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
-	CompanyURL string  `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
-	Linkman    string  `gorm:"size:255"`
-	Telephone  string  `gorm:"size:255"`
-	Email      string  `gorm:"size:255"`
+	Title      string         `gorm:"size:255"`   // 职位标题
+	Position   string         `gorm:"size:255"`   // 原职位分类
+	Company    string         `gorm:"size:255"`   // 公司名
+	Param      pq.Int64Array  `gorm:"type:int[]"` // 标签
+	Category   int            // 分类
+	Area       int            // 地区
+	MinPay     int            // 最小月薪
+	MaxPay     int            // 最大月薪
+	Education  int            // 学历
+	Experience int            // 工作经验
+	Intro      string         `gorm:"type:text"` // 职位介绍
+	Rank       float32        // 排序
+	Tags       pq.StringArray `gorm:"type:text[]"` // 标签
+	SourceFrom string         `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
+	CompanyURL string         `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
+	Linkman    string         `gorm:"size:255"`
+	Telephone  string         `gorm:"size:255"`
+	Email      string         `gorm:"size:255"`
 	Lng        float64
 	Lat        float64
 	Address    string
@@ -99,7 +98,9 @@ func job(c echo.Context) error {
 	response.Education = conf.Education[job.Education]
 	response.Experience = conf.Experience[job.Experience]
 	response.Intro = job.Intro
-	response.Tags = strings.Split(Substr(job.Tags, 1, -1), ",")
+	fmt.Println(job.Tags)
+	response.Tags = job.Tags
+	// response.Tags = strings.Split(Substr(job.Tags, 1, -1), ",")
 	response.Linkman = job.Linkman
 	response.Telephone = job.Telephone
 	response.Email = job.Email
@@ -164,14 +165,14 @@ func jobs(c echo.Context) error {
 
 	var list ListJobs
 	for _, j := range jobs {
-		tags := strings.Split(Substr(j.Tags, 1, -1), ",")
+		// tags := strings.Split(Substr(j.Tags, 1, -1), ",")
 		lj := ListJob{
 			ID:       j.ID,
 			Title:    j.Title,
 			Company:  j.Company,
 			Address:  j.Address,
 			Salary:   GetSalary(j.MinPay, j.MaxPay),
-			Welfare:  tags,
+			Welfare:  j.Tags,
 			Distance: GetDistace(lat, lng, j.Lat, j.Lng),
 		}
 		list = append(list, lj)
