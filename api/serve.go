@@ -98,7 +98,7 @@ func job(c echo.Context) error {
 	response.Education = conf.Education[job.Education]
 	response.Experience = conf.Experience[job.Experience]
 	response.Intro = job.Intro
-	fmt.Println(job.Tags)
+	// fmt.Println(job.Tags)
 	response.Tags = job.Tags
 	// response.Tags = strings.Split(Substr(job.Tags, 1, -1), ",")
 	response.Linkman = job.Linkman
