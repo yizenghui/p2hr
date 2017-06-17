@@ -153,27 +153,41 @@ func jobs(c echo.Context) error {
 	db.Offset(offset).Limit(limit).Where(mapWhere).Find(&jobs)
 
 	type ListJob struct {
-		ID       uint     `json:"id" `
-		Title    string   `json:"title" `
-		Company  string   `json:"company" `
-		Salary   string   `json:"salary" `
-		Welfare  []string `json:"welfare" `
-		Address  string   `json:"address" `
-		Distance string   `json:"distance" `
+		ID         uint     `json:"id" `
+		Title      string   `json:"title" `
+		Company    string   `json:"company" `
+		Salary     string   `json:"salary" `
+		Welfare    []string `json:"welfare" `
+		Address    string   `json:"address" `
+		Distance   string   `json:"distance" `
+		Education  string   `json:"education" `
+		Experience string   `json:"experience" `
 	}
 	type ListJobs []ListJob
 
 	var list ListJobs
 	for _, j := range jobs {
 		// tags := strings.Split(Substr(j.Tags, 1, -1), ",")
+		edu := conf.Education[j.Education]
+		if edu == "" {
+			edu = "学历不限"
+		}
+		exp := conf.Experience[j.Experience]
+		if exp == "" {
+			exp = "经验不限"
+		} else {
+			exp = exp + "经验"
+		}
 		lj := ListJob{
-			ID:       j.ID,
-			Title:    j.Title,
-			Company:  j.Company,
-			Address:  j.Address,
-			Salary:   GetSalary(j.MinPay, j.MaxPay),
-			Welfare:  j.Tags,
-			Distance: GetDistace(lat, lng, j.Lat, j.Lng),
+			ID:         j.ID,
+			Title:      j.Title,
+			Company:    j.Company,
+			Address:    j.Address,
+			Salary:     GetSalary(j.MinPay, j.MaxPay),
+			Welfare:    j.Tags,
+			Distance:   GetDistace(lat, lng, j.Lat, j.Lng),
+			Education:  edu,
+			Experience: exp,
 		}
 		list = append(list, lj)
 	}
