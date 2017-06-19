@@ -54,23 +54,24 @@ type Job struct {
 
 // ResJob 响应结构
 type ResJob struct {
-	ID         uint      `json:"id" `
-	CreatedAt  time.Time `json:"created_at" `
-	UpdatedAt  time.Time `json:"updated_at" `
-	Title      string    `json:"title" `
-	Position   string    `json:"position" `
-	Company    string    `json:"company" `
-	Category   string    `json:"category" `
-	Area       string    `json:"area" `
-	Salary     string    `json:"salary" `
-	Education  string    `json:"education" `
-	Experience string    `json:"experience" `
-	Intro      string    `json:"intro"` // 职位介绍
-	Tags       []string  `json:"tags"`  // 职位介绍
-	Linkman    string    `json:"linkman" `
-	Telephone  string    `json:"telephone" `
-	Email      string    `json:"email" `
-	Address    string    `json:"address" `
+	ID          uint      `json:"id" `
+	CreatedAt   time.Time `json:"created_at" `
+	UpdatedAt   time.Time `json:"updated_at" `
+	Title       string    `json:"title" `
+	Position    string    `json:"position" `
+	Company     string    `json:"company" `
+	Category    string    `json:"category" `
+	Area        string    `json:"area" `
+	Salary      string    `json:"salary" `
+	Education   string    `json:"education" `
+	Experience  string    `json:"experience" `
+	Intro       string    `json:"intro"` // 职位介绍
+	Tags        []string  `json:"tags"`  // 职位介绍
+	Linkman     string    `json:"linkman" `
+	Telephone   string    `json:"telephone" `
+	Email       string    `json:"email" `
+	Address     string    `json:"address" `
+	UpdatedDate string    `json:"updated_date" `
 }
 
 func job(c echo.Context) error {
@@ -105,6 +106,7 @@ func job(c echo.Context) error {
 	response.Telephone = job.Telephone
 	response.Email = job.Email
 	response.Address = job.Address
+	response.UpdatedDate = GetUpdateTime(job.UpdatedAt)
 	return c.JSON(http.StatusOK, response)
 }
 
@@ -153,15 +155,19 @@ func jobs(c echo.Context) error {
 	db.Offset(offset).Limit(limit).Where(mapWhere).Find(&jobs)
 
 	type ListJob struct {
-		ID         uint     `json:"id" `
-		Title      string   `json:"title" `
-		Company    string   `json:"company" `
-		Salary     string   `json:"salary" `
-		Welfare    []string `json:"welfare" `
-		Address    string   `json:"address" `
-		Distance   string   `json:"distance" `
-		Education  string   `json:"education" `
-		Experience string   `json:"experience" `
+		ID          uint     `json:"id" `
+		Title       string   `json:"title" `
+		Position    string   `json:"position" `
+		Company     string   `json:"company" `
+		Salary      string   `json:"salary" `
+		Welfare     []string `json:"welfare" `
+		Address     string   `json:"address" `
+		Distance    string   `json:"distance" `
+		Area        string   `json:"area" `
+		Education   string   `json:"education" `
+		Experience  string   `json:"experience" `
+		ShowInfo    bool     `json:"showinfo" `
+		UpdatedDate string   `json:"updated_date" `
 	}
 	type ListJobs []ListJob
 
@@ -179,19 +185,34 @@ func jobs(c echo.Context) error {
 			exp = exp + "经验"
 		}
 		lj := ListJob{
-			ID:         j.ID,
-			Title:      j.Title,
-			Company:    j.Company,
-			Address:    j.Address,
-			Salary:     GetSalary(j.MinPay, j.MaxPay),
-			Welfare:    j.Tags,
-			Distance:   GetDistace(lat, lng, j.Lat, j.Lng),
-			Education:  edu,
-			Experience: exp,
+			ID:          j.ID,
+			Title:       j.Title,
+			Company:     j.Company,
+			Address:     j.Address,
+			Salary:      GetSalary(j.MinPay, j.MaxPay),
+			Welfare:     j.Tags,
+			Distance:    GetDistace(lat, lng, j.Lat, j.Lng),
+			Area:        location.GetNameByAdcode(strconv.Itoa(j.Area)),
+			Education:   edu,
+			Experience:  exp,
+			ShowInfo:    false,
+			Position:    j.Position,
+			UpdatedDate: GetUpdateTime(j.UpdatedAt),
 		}
 		list = append(list, lj)
 	}
 	return c.JSON(http.StatusOK, list)
+}
+
+// GetUpdateTime 格式化时间
+func GetUpdateTime(updateAt time.Time) string {
+	// timestamp :=updateAt.Unix()
+	str := updateAt.Format("2006-01-02")
+	today := time.Now().Format("2006-01-02")
+	if str == today {
+		str = "今天"
+	}
+	return str
 }
 
 // GetSalary 待遇文字
@@ -228,10 +249,10 @@ func GetDistace(latA, lngA, LatB, LngB float64) string {
 		case d < 10000:
 			distance = "10公里内"
 		default:
-			distance = "超过10公里"
+			distance = "10公里以上"
 		}
 	} else {
-		distance = "未知距离"
+		distance = ""
 	}
 	return distance
 }
