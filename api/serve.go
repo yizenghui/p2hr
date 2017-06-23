@@ -126,7 +126,18 @@ func jobs(c echo.Context) error {
 		distance = 5000
 	}
 
-	var mapWhere = fmt.Sprintf("earth_box (ll_to_earth (%f, %f),%d) @> ll_to_earth (lat, lng)", lat, lng, distance)
+	query := c.QueryParam("query")
+
+	var mapWhere string
+	if query != "" {
+
+		mapWhere = fmt.Sprintf("earth_box (ll_to_earth (%f, %f),%d) @> ll_to_earth (lat, lng) and intro ~'%v'", lat, lng, distance, query)
+
+	} else {
+
+		mapWhere = fmt.Sprintf("earth_box (ll_to_earth (%f, %f),%d) @> ll_to_earth (lat, lng)", lat, lng, distance)
+
+	}
 
 	// fmt.Println(mapWhere)
 
