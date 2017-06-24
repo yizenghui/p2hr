@@ -76,7 +76,8 @@ type ResJob struct {
 
 func job(c echo.Context) error {
 	var response ResJob
-	db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	// db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	db, err := gorm.Open("postgres", "host=192.157.192.118 user=xiaoyi dbname=spider sslmode=disable password=123456")
 	if err != nil {
 		panic("连接数据库失败")
 	}
@@ -151,7 +152,8 @@ func jobs(c echo.Context) error {
 	// offset = 0
 
 	// fmt.Println(limit, offset)
-	db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	//db, err := gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	db, err := gorm.Open("postgres", "host=192.157.192.118 user=xiaoyi dbname=spider sslmode=disable password=123456")
 
 	if err != nil {
 		panic("连接数据库失败")
@@ -244,23 +246,23 @@ func GetDistace(latA, lngA, LatB, LngB float64) string {
 		d := gps.Distance(latA, lngA, LatB, LngB)
 		switch {
 		case d < 100:
-			distance = "百米内"
+			distance = "0.1km"
 		case d < 500:
-			distance = "半公里内"
+			distance = "0.5km"
 		case d < 1000:
-			distance = "1公里内"
+			distance = "1km"
 		case d < 2000:
-			distance = "2公里内"
+			distance = "2km"
 		case d < 3000:
-			distance = "3公里内"
+			distance = "3km"
 		case d < 4000:
-			distance = "4公里内"
+			distance = "4km"
 		case d < 5000:
-			distance = "5公里内"
+			distance = "5km"
 		case d < 10000:
-			distance = "10公里内"
+			distance = "10km"
 		default:
-			distance = "10公里以上"
+			distance = "10km+"
 		}
 	} else {
 		distance = ""
@@ -305,8 +307,9 @@ func Substr(str string, start, length int) string {
 func init() {
 
 	var err error
-	db, err = gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
+	//db, err = gorm.Open("postgres", "host=localhost user=postgres dbname=spider sslmode=disable password=123456")
 
+	db, err = gorm.Open("postgres", "host=192.157.192.118 user=xiaoyi dbname=spider sslmode=disable password=123456")
 	if err != nil {
 		panic("连接数据库失败")
 	}

@@ -73,7 +73,8 @@ type (
 var db *gorm.DB
 
 func init() {
-	db, _ = gorm.Open("postgres", "host=localhost user=postgres dbname=spider password=123456 sslmode=disable")
+	//db, _ = gorm.Open("postgres", "host=localhost user=postgres dbname=spider password=123456 sslmode=disable")
+	db, _ = gorm.Open("postgres", "host=192.157.192.118 user=xiaoyi dbname=spider sslmode=disable password=123456")
 
 	db.AutoMigrate(&Job{})
 }
