@@ -123,6 +123,10 @@ func jobs(c echo.Context) error {
 	lat, _ := strconv.ParseFloat(c.QueryParam("lat"), 64)
 	lng, _ := strconv.ParseFloat(c.QueryParam("lng"), 64)
 	distance, _ := strconv.Atoi(c.QueryParam("distance"))
+	category, _ := strconv.Atoi(c.QueryParam("category"))
+	tag, _ := strconv.Atoi(c.QueryParam("tag"))
+	minPay, _ := strconv.Atoi(c.QueryParam("min_pay"))
+	maxPay, _ := strconv.Atoi(c.QueryParam("max_pay"))
 	if distance <= 0 || distance > 20000 {
 		distance = 5000
 	}
@@ -137,6 +141,18 @@ func jobs(c echo.Context) error {
 	} else {
 
 		mapWhere = fmt.Sprintf("earth_box (ll_to_earth (%f, %f),%d) @> ll_to_earth (lat, lng)", lat, lng, distance)
+
+	}
+	if category != 0 {
+		mapWhere = fmt.Sprintf("%v and category = %d", mapWhere, category)
+	}
+	if tag != 0 {
+		mapWhere = fmt.Sprintf("%v and category = %d", mapWhere, category)
+	}
+	if minPay != 0 {
+
+	}
+	if maxPay != 0 {
 
 	}
 
