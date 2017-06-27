@@ -147,13 +147,20 @@ func jobs(c echo.Context) error {
 		mapWhere = fmt.Sprintf("%v and category = %d", mapWhere, category)
 	}
 	if tag != 0 {
-		mapWhere = fmt.Sprintf("%v and category = %d", mapWhere, category)
+		mapWhere = fmt.Sprintf("%v and param @> array[%d]", mapWhere, tag)
 	}
-	if minPay != 0 {
-
-	}
-	if maxPay != 0 {
-
+	if minPay == -1 && maxPay == -1 {
+		// 面议
+		mapWhere = fmt.Sprintf("%v and min_pay = %d and max_pay=%d", mapWhere, 0, 0)
+	} else if minPay != 0 && maxPay != 0 {
+		// n1~n2 多少至多少
+		mapWhere = fmt.Sprintf("%v and min_pay >= %d and min_pay<%d", mapWhere, minPay, maxPay)
+	} else if minPay == 0 && maxPay != 0 {
+		// 0~n1 多少以下不包括面议
+		mapWhere = fmt.Sprintf("%v and min_pay >= %d and max_pay <= %d and max_pay > 0", mapWhere, minPay, maxPay)
+	} else if minPay != 0 && maxPay == 0 {
+		// n1~0 多少以上
+		mapWhere = fmt.Sprintf("%v and min_pay >= %d", mapWhere, minPay)
 	}
 
 	// fmt.Println(mapWhere)
@@ -181,7 +188,7 @@ func jobs(c echo.Context) error {
 
 	var jobs Jobs
 	// db.Offset(offset).Limit(limit).Where("earth_box (ll_to_earth (23.1156237010336, 113.412643600147),100) @> ll_to_earth (lat, lng)").Find(&jobs)
-	db.Offset(offset).Limit(limit).Where(mapWhere).Find(&jobs)
+	db.Offset(offset).Limit(limit).Where(mapWhere).Order("rank desc").Find(&jobs)
 
 	type ListJob struct {
 		ID          uint     `json:"id" `

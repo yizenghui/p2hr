@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
+	"time"
 
 	"github.com/astaxie/beego/validation"
 	"github.com/hprose/hprose-golang/rpc"
@@ -52,7 +54,7 @@ type (
 		Education  int            // 学历
 		Experience int            // 工作经验
 		Intro      string         `gorm:"type:text"` // 职位介绍
-		Rank       float32        // 排序
+		Rank       float64        // 排序
 		Tags       pq.StringArray `gorm:"type:text[]"` // 标签
 		SourceFrom string         `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
 		CompanyURL string         `gorm:"size:255"`    // string默认长度为255, 使用这种tag重设。
@@ -73,8 +75,8 @@ type (
 var db *gorm.DB
 
 func init() {
-	//db, _ = gorm.Open("postgres", "host=localhost user=postgres dbname=spider password=123456 sslmode=disable")
-	db, _ = gorm.Open("postgres", "host=192.157.192.118 user=xiaoyi dbname=spider sslmode=disable password=123456")
+	db, _ = gorm.Open("postgres", "host=localhost user=postgres dbname=spider password=123456 sslmode=disable")
+	// db, _ = gorm.Open("postgres", "host=192.157.192.118 user=xiaoyi dbname=spider sslmode=disable password=123456")
 
 	db.AutoMigrate(&Job{})
 }
@@ -117,13 +119,73 @@ func save(str string) string {
 	if err != nil {
 		return "err: " + err.Error() + "!"
 	}
+
 	// fmt.Println(job.Param, job.Tags)
 
+	// TODO 获取票数
+	vote := 1   // 支持
+	devote := 0 // 反对
+	level := 0  //级别
+	// 获取排行分数
+	job.Rank = GetRank(vote, devote, time.Now().Unix(), level)
 	db.Save(&job)
 
-	fmt.Println(job.ID, job.Category, job.Company, job.Title)
+	fmt.Println(job.ID, job.Category, job.Company, job.Title, job.Rank)
 	jobString, _ := json.Marshal(job)
 	return string(jobString)
+}
+
+// 获取更新时间界限 (如果更新时间小于界限，就去更新职位)
+func getUpdateTime() int64 {
+
+	// nTime := time.Now()
+	// yesTime := nTime.AddDate(0, 0, -1).Unix()
+
+	timeStr := time.Now().Format("2006-01-02")
+	// fmt.Println("timeStr:", timeStr)
+	today, _ := time.Parse("2006-01-02", timeStr)
+	todayTime := today.Unix() - 8*3600
+	// fmt.Println("timeNumber:", todayTime)
+	return todayTime
+}
+
+//GetRank 获取排名
+func GetRank(vote int, devote int, timestamp int64, level int) float64 {
+
+	// 等级加成  积分*(1+等级%) + 等级
+	vote = vote*(100+level)/100 + level
+
+	// 赞成与否定差
+	voteDiff := vote - devote
+
+	//争议度(赞成/否定)
+	var voteDispute float64
+	if voteDiff != 0 {
+		voteDispute = math.Abs(float64(voteDiff))
+	} else {
+		voteDispute = 1
+	}
+
+	// 项目开始时间 2017-06-01
+	projectStartTime, _ := time.Parse("2006-01-02", "2017-06-01")
+	fund := projectStartTime.Unix() - 8*3600
+	survivalTime := timestamp - fund
+
+	// 投票方向与时间造成的系数差
+	var timeMagin int64
+	if voteDiff > 0 {
+		timeMagin = survivalTime / 45000
+	} else if voteDiff < 0 {
+		timeMagin = -1 * survivalTime / 45000
+	} else {
+		timeMagin = 0
+	}
+
+	vateMagin := math.Log10(voteDispute)
+
+	//详细算法
+	socre := vateMagin + float64(timeMagin)
+	return socre
 }
 
 //RequstJobSaveData 把请求的数据包转成数据模型中的参数
